@@ -1,5 +1,7 @@
 import url from 'url';
+import _ from 'lodash';
 import type { Socket } from 'socket.io';
+import type { IncomingHttpHeaders } from "http";
 import type { SSH } from '../shared/interfaces';
 import { address } from './command/address.js';
 import { loginOptions } from './command/login.js';
@@ -9,11 +11,27 @@ const localhost = (host: string): boolean =>
   process.getuid() === 0 &&
   (host === 'localhost' || host === '0.0.0.0' || host === '127.0.0.1');
 
-const urlArgs = (
-  referer: string | undefined,
+function urlArgs(
+  headers: IncomingHttpHeaders,
   def: { [s: string]: string },
-): { [s: string]: string } =>
-  Object.assign(def, url.parse(referer || '', true).query);
+): { [s: string]: string } {
+  // https://stackoverflow.com/a/28420962/8608146
+  console.log("****************************", headers, headers.authorization);
+  if (!_.isUndefined(headers.authorization)) {
+    // TODO handle errors properly
+    try {
+      const pass = decodeURIComponent(escape(atob(headers.authorization.split(' ')[1]))).split(':')[1];
+      console.log("****************************", pass, def);
+      Object.assign(def, {pass});
+      console.log("****************************", pass, def);
+    }
+    catch (e) {
+      console.error(e);
+    }
+  }
+  console.log("****************************", def);
+  return Object.assign(def, url.parse(headers.referer || '', true).query);
+}
 
 export function getCommand(
   {
@@ -40,7 +58,7 @@ export function getCommand(
   if (!forcessh && localhost(host)) {
     return [loginOptions(command, remoteAddress), true];
   }
-  const args = urlArgs(headers.referer, {
+  const args = urlArgs(headers, {
     host: sshAddress,
     port: `${port}`,
     pass: pass || '',

@@ -47,6 +47,12 @@ server {
     proxy_set_header Host $http_host;
     proxy_set_header X-NginX-Proxy true;
 
+    # https://stackoverflow.com/a/43969685/8608146
+                                      #   term:term
+                                      #   echo -n "username:password" | base64
+    proxy_set_header Authorization "Basic dGVybTp0ZXJt";
+    proxy_set_header remote-user "term";
+
     # Authenticate user via other services (e.g., oauth2 end-points)
     #
     # Configuration : 
