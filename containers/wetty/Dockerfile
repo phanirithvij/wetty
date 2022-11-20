@@ -1,11 +1,11 @@
-FROM node:current-alpine as builder
+FROM node:16-alpine as builder
 RUN apk add -U build-base python3
 WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN yarn install
 RUN yarn build
 
-FROM node:current-alpine
+FROM node:16-alpine
 LABEL maintainer="butlerx@notthe.cloud"
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
