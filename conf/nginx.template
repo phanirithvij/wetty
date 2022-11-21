@@ -79,7 +79,6 @@ server {
     # set_by_lua_file also works without ngx.say calls https://github.com/openresty/lua-nginx-module/issues/275
     # https://openresty-reference.readthedocs.io/en/latest/Directives/#rewrite_by_lua
     rewrite_by_lua_file /etc/nginx/conf.d/lua/redis-auth.lua;
-    # rewrite_by_lua_file /etc/nginx/conf.d/lua/redis-username.lua;
     proxy_set_header Authorization "Basic $auth_header";
     proxy_set_header remote-user $user_name;
 

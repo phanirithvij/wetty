@@ -26,11 +26,21 @@ if not ok then
     return
 end
 
+
+local function closeRedis(red)
+  -- or just close the connection right away:
+  local ok, err = red:close()
+  if not ok then
+       -- ngx.say("failed to close: ", err)
+       return
+  end
+end
+
 local function isempty(s)
   return s == nil or s == ''
 end
 
-local sshhost = ngx.var.args_host
+local sshhost = ngx.var.arg_host
 if isempty(sshhost) then
   sshhost = "localhost"
 end
@@ -46,17 +56,13 @@ end
 
 -- local res, err = red:get(sshhost)
 
-local ok, err = red:set("host_" .. sshhost, "rithviz:Rithvij@123") --.. "_" .. uuidx,  res)
+local ok, err = red:set("host_" .. sshhost, "term:term") --.. "_" .. uuidx,  res)
 if not ok then
     ngx.say("failed to set <username:password> for host: ", err)
-    return
+    return closeRedis(red)
 end
 
 ngx.say("set result: ", ok)
 
--- or just close the connection right away:
-local ok, err = red:close()
-if not ok then
-     ngx.say("failed to close: ", err)
-     return
-end
+closeRedis(red)
+

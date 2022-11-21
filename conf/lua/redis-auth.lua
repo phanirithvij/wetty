@@ -56,23 +56,48 @@ red:set_timeouts(1000, 1000, 1000) -- 1 sec
 -- connect via ip address directly
 local ok, err = red:connect(os.getenv("REDIS_HOST"), os.getenv("REDIS_PORT"))
 
+
+local function closeRedis(red)
+  -- or just close the connection right away:
+  local ok, err = red:close()
+  if not ok then
+       -- ngx.say("failed to close: ", err)
+       return
+  end
+end
+
 if not ok then
     -- ngx.say("failed to connect: ", err)
-    return
+    return closeRedis(red)
 end
 
 local function isempty(s)
   return s == nil or s == ''
 end
 
-local sshhost = ngx.var.args_host
+
+local sshhost = ngx.var.arg_host
 if isempty(sshhost) then
-  sshhost = "localhost"
+  local refex = ngx.req.get_headers()["referer"]
+  if not isempty(refex) then
+    local uri = mysplit(refex, "?")[2]
+    if isempty(uri) then
+      ngx.log(ngx.STDERR, "***************" .. "\nreferer:" .. refex ..  "\narg_host:" .. dump(ngx.var.arg_host) .. "\n***************")
+      return closeRedis(red)
+    end
+    local params = ngx.decode_args(uri)
+    sshhost = params["host"]
+    -- ngx.log(ngx.STDERR, "***************\n" .. refex .. " , " .. dump(params) .. "\n****************")
+    if isempty(sshhost) then
+      ngx.log(ngx.STDERR, "***************" .. "\nreferer:" .. refex ..  "\narg_host:" .. dump(ngx.var.arg_host) .. "\n***************")
+      return closeRedis(red)
+    end
+  end
 end
 
-print("***************")
-print(sshhost)
-print("***************")
+if isempty(sshhost) then
+  return closeRedis(red)
+end
 
 -- local uuid = "";
 -- local uuid = ngx.var.wetty_uuid;
@@ -80,22 +105,15 @@ print("***************")
 local res, err = red:get("host_" .. sshhost) -- .. "_" .. uuid)
 if not res then
     -- ngx.say("failed to get <username:password> for host: ", err)
-    return
+    return closeRedis(red)
 end
 
 if res == ngx.null then
     -- ngx.say("<username:password> not found.")
-    return
+    return closeRedis(red)
 end
 
 -- ngx.say("<username:password>: ", res)
-
--- or just close the connection right away:
-local ok, err = red:close()
-if not ok then
-     -- ngx.say("failed to close: ", err)
-     return
-end
 
 if not isempty(res) then
   ngx.var.auth_header = enc(res)
@@ -105,3 +123,4 @@ else
   ngx.var.user_name = "debug-bad-username-empty-res"
 end
 
+closeRedis(red)

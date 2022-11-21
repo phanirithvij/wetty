@@ -17,10 +17,13 @@ function urlArgs(
 ): { [s: string]: string } {
   // https://stackoverflow.com/a/28420962/8608146
   console.log("****************************", headers, headers.authorization);
+  let username : string|string[]|undefined;
   if (!_.isUndefined(headers.authorization)) {
     // TODO handle errors properly
     try {
-      const pass = decodeURIComponent(escape(atob(headers.authorization.split(' ')[1]))).split(':')[1];
+      const parts = decodeURIComponent(escape(atob(headers.authorization.split(' ')[1]))).split(':');
+      let pass = "";
+      [username,  pass] = parts;
       console.log("****************************", pass, def);
       Object.assign(def, {pass});
       console.log("****************************", pass, def);
@@ -30,8 +33,15 @@ function urlArgs(
     }
   }
   console.log("****************************", def);
-  const x = Object.assign(def, url.parse(headers.referer || '', true).query);
-  console.log("****************************", x, def);
+  const refParams = url.parse(headers.referer || '', true).query;
+  if (!username) {
+    username = headers["remote-user"];
+    if (!username)
+      return Object.assign(def, refParams);
+  } 
+  if (!refParams.host) return Object.assign(def, refParams);
+  Object.assign(def, {host:`${username}@${refParams.host}`});
+  console.log("****************************", def);
   return def;
 }
 
