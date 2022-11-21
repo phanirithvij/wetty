@@ -5,6 +5,5 @@ dist
 *.md
 *.log
 *.png
-**/*.conf
 **/*.service
 Dockerfile

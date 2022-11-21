@@ -36,16 +36,27 @@ server {
   }
 
 
-  location /test {
-      # need to specify the resolver to resolve the hostname
-      # https://stackoverflow.com/a/37656784
-      resolver 127.0.0.11;
+  # location /test {
+      # # need to specify the resolver to resolve the hostname
+      # # https://stackoverflow.com/a/37656784
+      # resolver 127.0.0.11;
+# 
+      # content_by_lua_file /etc/nginx/conf.d/redis-conf.lua;
+  # }
 
-      content_by_lua_file /etc/nginx/conf.d/redis-conf.lua;
+
+  location /wetty-uuid {
+    resolver 127.0.0.11;
+    set $wetty_uuid '';
+
+    rewrite_by_lua_file /etc/nginx/conf.d/lua/redis-sethost.lua;
   }
 
 
   location ^~ /wetty {
+    # https://stackoverflow.com/a/37656784
+    resolver 127.0.0.11;
+
     proxy_pass http://${WETTY_HOST}:${WETTY_PORT};
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -60,8 +71,17 @@ server {
     # https://stackoverflow.com/a/43969685/8608146
                                       #   term:term
                                       #   echo -n "username:password" | base64
-    proxy_set_header Authorization "Basic dGVybTp0ZXJt";
-    proxy_set_header remote-user "term";
+    # https://stackoverflow.com/a/48764182/8608146
+    set $auth_header '';
+    set $user_name '';
+
+    # Lua in nginx https://serverfault.com/a/740041/538675
+    # set_by_lua_file also works without ngx.say calls https://github.com/openresty/lua-nginx-module/issues/275
+    # https://openresty-reference.readthedocs.io/en/latest/Directives/#rewrite_by_lua
+    rewrite_by_lua_file /etc/nginx/conf.d/lua/redis-auth.lua;
+    # rewrite_by_lua_file /etc/nginx/conf.d/lua/redis-username.lua;
+    proxy_set_header Authorization "Basic $auth_header";
+    proxy_set_header remote-user $user_name;
 
     # Authenticate user via other services (e.g., oauth2 end-points)
     #

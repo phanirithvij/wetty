@@ -30,7 +30,9 @@ function urlArgs(
     }
   }
   console.log("****************************", def);
-  return Object.assign(def, url.parse(headers.referer || '', true).query);
+  const x = Object.assign(def, url.parse(headers.referer || '', true).query);
+  console.log("****************************", x, def);
+  return def;
 }
 
 export function getCommand(
